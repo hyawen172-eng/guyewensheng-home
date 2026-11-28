@@ -814,14 +814,8 @@ body.chat-immersive #view-chat .chat-composer{order:4!important}
  <button class="splash-skip" id="splashSkip">跳过</button>
 </div>
 <script>
-// Independent splash failsafe: bypass the animation and never trap the user on startup.
-(function(){
- const splash=document.getElementById('coupleSplash');
- const skip=document.getElementById('splashSkip');
- const close=()=>{if(splash){splash.style.setProperty('display','none','important');splash.remove();}};
- if(skip)skip.addEventListener('click',close,{once:true});
- setTimeout(close,6000);
-})();
+// Startup failsafe independent of the app bundle: the splash must never block the home screen.
+(()=>{const splash=document.getElementById('coupleSplash');const skip=document.getElementById('splashSkip');const dismiss=()=>{if(splash&&splash.isConnected){splash.style.cssText+=';display:none!important;pointer-events:none!important';splash.remove()}};if(skip)skip.addEventListener('click',dismiss,{capture:true,once:true});window.setTimeout(dismiss,6500)})();
 </script>
 
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
