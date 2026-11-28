@@ -1334,41 +1334,111 @@ body.chat-immersive #view-chat .chat-composer{order:4!important}
 }
  function galaxyRand(seed){let t=seed>>>0;return()=>{t+=0x6D2B79F5;let x=t;x=Math.imul(x^x>>>15,x|1);x^=x+Math.imul(x^x>>>7,x|61);return((x^x>>>14)>>>0)/4294967296}}
  function drawGalaxyNebula(ctx,w,h){
-  const now=performance.now()/1000,pulse=.92+.08*Math.sin(now*.18);
-  const glow=(nx,ny,rx,ry,color,alpha,rotation=0)=>{
-   ctx.save();ctx.translate(w*nx,h*ny);ctx.rotate(rotation);ctx.scale(rx,ry);
-   const g=ctx.createRadialGradient(0,0,0,0,0,1);
-   g.addColorStop(0,`rgba(${color},${alpha*pulse})`);
-   g.addColorStop(.28,`rgba(${color},${alpha*.62*pulse})`);
-   g.addColorStop(.62,`rgba(${color},${alpha*.16})`);
-   g.addColorStop(1,`rgba(${color},0)`);
-   ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,1,0,Math.PI*2);ctx.fill();ctx.restore();
-  };
-  ctx.save();ctx.globalCompositeOperation='screen';
-  glow(.49,.50,.68,.38,'67,105,145',.19,-.42);
-  glow(.42,.42,.48,.27,'106,131,167',.16,-.38);
-  glow(.62,.57,.42,.24,'69,126,139',.12,-.48);
-  glow(.28,.29,.24,.16,'112,132,166',.13,-.62);
-  glow(.74,.70,.25,.18,'123,104,151',.10,-.5);
-  glow(.51,.49,.21,.15,'190,180,159',.095,-.4);
-  glow(.50,.49,.105,.09,'214,222,226',.075,-.4);
-  ctx.restore();
-  // Curved luminous filaments give the cloud structure without a hard spiral outline.
-  ctx.save();ctx.globalCompositeOperation='screen';ctx.lineCap='round';
-  const filaments=[
-   {a:[w*.05,h*.61],b:[w*.30,h*.14],c:[w*.58,h*.12],d:[w*.94,h*.43],col:'rgba(135,170,204,.075)',width:Math.max(9,w*.035)},
-   {a:[w*.08,h*.75],b:[w*.30,h*.42],c:[w*.66,h*.32],d:[w*.94,h*.62],col:'rgba(103,155,174,.055)',width:Math.max(7,w*.025)},
-   {a:[w*.12,h*.24],b:[w*.35,h*.03],c:[w*.62,h*.28],d:[w*.87,h*.84],col:'rgba(161,148,183,.045)',width:Math.max(6,w*.018)}
-  ];
-  filaments.forEach(f=>{ctx.strokeStyle=f.col;ctx.lineWidth=f.width;ctx.shadowColor=f.col;ctx.shadowBlur=f.width*1.5;ctx.beginPath();ctx.moveTo(...f.a);ctx.bezierCurveTo(...f.b,...f.c,...f.d);ctx.stroke()});
-  ctx.restore();
-  // A restrained dark dust lane cuts through the brighter gas.
-  ctx.save();ctx.globalCompositeOperation='source-over';ctx.lineCap='round';
-  const dust=ctx.createLinearGradient(w*.10,h*.30,w*.92,h*.72);
-  dust.addColorStop(0,'rgba(3,8,14,0)');dust.addColorStop(.48,'rgba(3,8,14,.24)');dust.addColorStop(1,'rgba(3,8,14,0)');
-  ctx.strokeStyle=dust;ctx.lineWidth=Math.max(4,w*.018);ctx.beginPath();ctx.moveTo(w*.08,h*.43);ctx.bezierCurveTo(w*.33,h*.27,w*.62,h*.77,w*.94,h*.55);ctx.stroke();ctx.restore();
+  // Deterministic nebula texture: cached per canvas size, so animation stays lightweight.
+  const cache=drawGalaxyNebula._cache;
+  if(!cache||cache.w!==w||cache.h!==h){
+    const tex=document.createElement('canvas');tex.width=Math.max(1,Math.round(w));tex.height=Math.max(1,Math.round(h));
+    const g=tex.getContext('2d');
+    const rand=galaxyRand(738291+Math.round(w)*31+Math.round(h)*73);
+    const gauss=()=>{const u=Math.max(.00001,rand()),v=rand();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+    const spine=x=>.69-.39*x+Math.sin(x*7.6+.45)*.055+Math.sin(x*15.3)*.018;
+    const palette=['89,119,165','89,143,158','121,111,158','157,137,166','170,157,139','96,128,153'];
+
+    // Diffuse gas wash with several overlapping color temperatures.
+    g.save();g.globalCompositeOperation='screen';
+    const wash=g.createLinearGradient(w*.08,h*.78,w*.92,h*.18);
+    wash.addColorStop(0,'rgba(60,91,128,0)');
+    wash.addColorStop(.22,'rgba(77,111,147,.13)');
+    wash.addColorStop(.52,'rgba(103,125,161,.17)');
+    wash.addColorStop(.78,'rgba(77,122,139,.10)');
+    wash.addColorStop(1,'rgba(55,83,117,0)');
+    g.fillStyle=wash;g.fillRect(0,0,w,h);
+
+    const broad=[
+      [.24,.63,.28,.25,'89,119,165',.19,-.48],
+      [.42,.52,.34,.24,'91,137,158',.16,-.48],
+      [.62,.42,.31,.22,'122,108,157',.15,-.43],
+      [.79,.34,.22,.19,'161,139,157',.12,-.50],
+      [.43,.72,.23,.16,'70,119,139',.12,-.35],
+      [.69,.62,.25,.17,'154,137,121',.075,-.4]
+    ];
+    broad.forEach(v=>{
+      g.save();g.translate(w*v[0],h*v[1]);g.rotate(v[6]);g.scale(w*v[2],h*v[3]);
+      const q=g.createRadialGradient(0,0,0,0,0,1);
+      q.addColorStop(0,`rgba(${v[4]},${v[5]})`);
+      q.addColorStop(.32,`rgba(${v[4]},${v[5]*.72})`);
+      q.addColorStop(.68,`rgba(${v[4]},${v[5]*.22})`);
+      q.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=q;g.beginPath();g.arc(0,0,1,0,Math.PI*2);g.fill();g.restore();
+    });
+
+    // Irregular, overlapping cloud knots along an organic cloud spine.
+    for(let i=0;i<46;i++){
+      const x=.08+rand()*.86, y=spine(x)+gauss()*.105;
+      const rx=w*(.025+rand()*.105), ry=h*(.018+rand()*.075);
+      const c=palette[Math.floor(rand()*palette.length)], alpha=.055+rand()*.105;
+      g.save();g.translate(x*w,y*h);g.rotate(-.48+gauss()*.42);g.scale(rx,ry);
+      const q=g.createRadialGradient(0,0,0,0,0,1);
+      q.addColorStop(0,`rgba(${c},${alpha})`);
+      q.addColorStop(.36,`rgba(${c},${alpha*.66})`);
+      q.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=q;g.beginPath();g.arc(0,0,1,0,Math.PI*2);g.fill();g.restore();
+    }
+    g.restore();
+
+    // Turbulent, feathered filaments. Their randomized paths avoid hard ribbon outlines.
+    g.save();g.globalCompositeOperation='screen';g.lineCap='round';g.lineJoin='round';
+    for(let i=0;i<190;i++){
+      const x0=-.05+rand()*1.05, span=.06+rand()*.31, x1=Math.min(1.06,x0+span);
+      const y0=spine(x0)+gauss()*.12, y1=spine(x1)+gauss()*.12;
+      const bend=gauss()*.07, c=palette[Math.floor(rand()*palette.length)];
+      const width=Math.max(1,w*(.001+rand()*.007)), alpha=.018+rand()*.052;
+      g.strokeStyle=`rgba(${c},${alpha})`;g.lineWidth=width;g.shadowColor=`rgba(${c},${alpha*1.8})`;g.shadowBlur=3+rand()*12;
+      g.beginPath();g.moveTo(x0*w,y0*h);
+      g.bezierCurveTo((x0+(x1-x0)*.28)*w,(y0+bend)*h,(x0+(x1-x0)*.72)*w,(y1-bend)*h,x1*w,y1*h);
+      g.stroke();
+    }
+    g.restore();
+
+    // Fine suspended dust contributes a volumetric texture inside the glowing gas.
+    g.save();g.globalCompositeOperation='screen';
+    for(let i=0;i<2450;i++){
+      const x=rand(),y=spine(x)+gauss()*(.035+rand()*.11);
+      if(y<.03||y>.98)continue;
+      const c=rand()<.62?'198,213,229':rand()<.72?'166,180,204':'210,190,166';
+      const r=.18+rand()*.78,alpha=.035+rand()*.12;
+      g.fillStyle=`rgba(${c},${alpha})`;g.beginPath();g.arc(x*w,y*h,r,0,Math.PI*2);g.fill();
+    }
+    g.restore();
+
+    // Feathered dark dust lanes add depth without outlining the cloud.
+    g.save();g.globalCompositeOperation='multiply';g.filter='blur(12px)';g.strokeStyle='rgba(3,8,16,.34)';g.lineWidth=Math.max(7,w*.022);g.lineCap='round';
+    const lanes=[
+      [[.12,.65],[.34,.48],[.53,.59],[.76,.37],[.92,.31]],
+      [[.22,.81],[.39,.64],[.57,.70],[.74,.54],[.88,.46]],
+      [[.08,.47],[.27,.39],[.45,.46],[.65,.29],[.82,.24]]
+    ];
+    lanes.forEach(points=>{g.beginPath();g.moveTo(points[0][0]*w,points[0][1]*h);g.bezierCurveTo(points[1][0]*w,points[1][1]*h,points[2][0]*w,points[2][1]*h,points[3][0]*w,points[3][1]*h);g.quadraticCurveTo(points[4][0]*w,points[4][1]*h,points[4][0]*w,points[4][1]*h);g.stroke()});
+    g.restore();
+
+    // Luminous gas cores give the nebula a subtle inner glow.
+    g.save();g.globalCompositeOperation='screen';
+    [[.29,.52,'174,195,221',.16],[.48,.47,'177,193,219',.13],[.66,.36,'192,173,191',.12],[.76,.59,'153,188,195',.085],[.38,.75,'179,164,145',.075]].forEach(v=>{
+      g.save();g.translate(w*v[0],h*v[1]);g.scale(w*.075,h*.06);
+      const q=g.createRadialGradient(0,0,0,0,0,1);
+      q.addColorStop(0,`rgba(${v[2]},${v[3]})`);q.addColorStop(.22,`rgba(${v[2]},${v[3]*.52})`);q.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=q;g.beginPath();g.arc(0,0,1,0,Math.PI*2);g.fill();g.restore();
+    });
+    g.restore();
+
+    drawGalaxyNebula._cache={w,h,canvas:tex};
+  }
+
+  const now=performance.now()/1000;
+  const breath=.94+.06*Math.sin(now*.22);
+  ctx.save();ctx.globalAlpha=breath;ctx.drawImage(drawGalaxyNebula._cache.canvas,0,0,w,h);ctx.restore();
 }
- function drawGalaxySpark(ctx,x,y,r,color,alpha,flare=false,selected=false){
+function drawGalaxySpark(ctx,x,y,r,color,alpha,flare=false,selected=false){
  ctx.save();ctx.globalAlpha=alpha;
  if(r>1.05){ctx.shadowColor=color;ctx.shadowBlur=flare?10:3.2}
  ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,Math.max(.62,r*.84),0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
