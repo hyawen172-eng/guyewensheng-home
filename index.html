@@ -934,7 +934,14 @@ body.chat-immersive #view-chat .chat-composer{order:4!important}
    <div class="view-intro"><div class="kicker">OUR MEMORY UNIVERSE · CONSTELLATION ARCHIVE</div><h2 class="page-heading">记忆星海</h2><div class="page-sub">每一段被认真留下的事，都是夜空里一颗不会轻易熄灭的星。</div></div>
    <section class="galaxy-hero"><div class="galaxy-hero-top"><div><div class="eyebrow">THE LITTLE UNIVERSE</div><div class="galaxy-count"><strong id="galaxyMemoryCount">0</strong><span>颗记忆星</span></div><div class="galaxy-caption" id="galaxyMemoryCaption">从第一颗星开始，慢慢收集属于我们的宇宙。</div></div><div class="galaxy-moon">✦</div></div><div class="galaxy-orbit orbit-a"></div><div class="galaxy-orbit orbit-b"></div><div class="galaxy-dust dust-a"></div><div class="galaxy-dust dust-b"></div><div class="galaxy-hero-actions"><button class="galaxy-light-button" id="addGalaxyMemory">＋ 收藏一颗星</button><button class="galaxy-ghost-button" id="randomGalaxyMemory">随机回望</button></div></section>
    <section class="memory-tools-panel"><div class="memory-search-row"><input id="memorySearch" type="search" placeholder="在星海里寻找一段记忆…"><select id="memorySort"><option value="newest">最近收录</option><option value="oldest">最早收录</option><option value="importance">重要程度</option><option value="favorites">星标优先</option></select></div><div class="memory-filter-row" id="memoryCategoryFilters"></div><div class="memory-action-row"><span class="eyebrow" id="memoryFilterCount">ALL STARS</span><div><button class="small-action" id="toggleGalaxySelection">选择星星</button><button class="small-action" id="selectAllGalaxyMemory">全选</button><button class="small-action" id="deleteGalaxyMemory">删除选中</button><button class="small-action" id="exportGalaxyMemory">导出</button><button class="small-action" id="importGalaxyMemory">导入</button></div></div></section>
-   <section class="galaxy-surface"><div class="galaxy-surface-label"><span>✧ MEMORY CONSTELLATION · DEEP SKY MAP</span><span id="galaxyCategoryLabel">ALL CATEGORIES</span></div><div class="galaxy-map-summary"><span><i class="galaxy-live-dot"></i><b id="galaxyMapStarCount">0</b> MEMORY STARS</span><span>每颗星对应一段记忆 · 拖动漫游</span></div><div class="galaxy-map-frame"><canvas id="memoryGalaxyCanvas" aria-label="银河记忆总览图。每颗星代表一条记忆，点击星星可以打开记忆。" role="img" tabindex="0"></canvas><div class="galaxy-map-tooltip" id="memoryGalaxyTooltip" hidden></div><div class="galaxy-empty" id="memoryGalaxyEmpty" hidden>这里还没有记忆星。<br>把重要的偏好、经历或约定收进来吧。</div></div><div class="galaxy-map-legend"><span><i class="legend-star legend-star-small"></i>普通记忆</span><span><i class="legend-star legend-star-bright"></i>重要记忆</span><span><i class="legend-star legend-star-fav"></i>星标记忆</span><span class="galaxy-map-hint" id="galaxySelectionStatus">拖动星海漫游 · 星光会呼吸</span></div></section>
+   <section class="panel" id="v32MigrationPanel" style="margin:14px 0;border:1px solid var(--line2);background:linear-gradient(145deg,#171e25,#10151a)">
+ <div class="panel-head"><div><div class="eyebrow">SAFE DATA TRANSFER</div><div class="panel-title">旧版本数据迁移</div></div><span class="eyebrow">V32 → CURRENT</span></div>
+ <div class="memory-note">把 v32 导出的聊天与记忆 JSON 合并到当前小屋。已有内容不会清空；相同会话会合并消息，相同记忆不会重复添加。迁移文件不需要包含 API 地址或 Key。</div>
+ <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:10px"><button type="button" class="secondary-button" id="importV32BackupBtn">选择 v32 聊天与记忆备份</button><button type="button" class="small-action" id="exportCurrentMigrationBtn">备份当前聊天与记忆</button></div>
+ <input type="file" id="v32BackupInput" accept=".json,application/json" hidden>
+ <div id="v32MigrationStatus" class="memory-note" aria-live="polite">等待导入。建议先保留 v32 原文件和导出 JSON 备份。</div>
+ </section>
+ <section class="galaxy-surface"><div class="galaxy-surface-label"><span>✧ MEMORY CONSTELLATION · DEEP SKY MAP</span><span id="galaxyCategoryLabel">ALL CATEGORIES</span></div><div class="galaxy-map-summary"><span><i class="galaxy-live-dot"></i><b id="galaxyMapStarCount">0</b> MEMORY STARS</span><span>每颗星对应一段记忆 · 拖动漫游</span></div><div class="galaxy-map-frame"><canvas id="memoryGalaxyCanvas" aria-label="银河记忆总览图。每颗星代表一条记忆，点击星星可以打开记忆。" role="img" tabindex="0"></canvas><div class="galaxy-map-tooltip" id="memoryGalaxyTooltip" hidden></div><div class="galaxy-empty" id="memoryGalaxyEmpty" hidden>这里还没有记忆星。<br>把重要的偏好、经历或约定收进来吧。</div></div><div class="galaxy-map-legend"><span><i class="legend-star legend-star-small"></i>普通记忆</span><span><i class="legend-star legend-star-bright"></i>重要记忆</span><span><i class="legend-star legend-star-fav"></i>星标记忆</span><span class="galaxy-map-hint" id="galaxySelectionStatus">拖动星海漫游 · 星光会呼吸</span></div></section>
    <section class="galaxy-footnote"><span class="footnote-star">✦</span><div><b>记忆会被带进之后的聊天</b><p>你可以随时编辑、收藏、导出或删除。星星只负责收好，不替你定义它们的意义。</p></div></section>
   </section>
   <section class="view" id="view-album">
@@ -1439,6 +1446,12 @@ function nearestGalaxyStar(x,y){let hit=null,best=Infinity;for(const p of galaxy
      else merged=mergeById(current,incoming[key],safeItemKey);
      store.set(key,merged)
    }
+   // Prefer the imported active conversation when the current page has only an empty starter chat.
+   if(incoming.activeChatId&&Array.isArray(store.get('chats',[]))&&store.get('chats',[]).some(c=>c.id===incoming.activeChatId)){
+     const currentActiveId=store.get('activeChatId','');
+     const currentActiveChat=store.get('chats',[]).find(c=>c.id===currentActiveId);
+     if(!currentActiveChat||!(currentActiveChat.messages||[]).length)store.set('activeChatId',incoming.activeChatId);
+   }
    // Restore scalar settings only if missing; merge profile/config objects without overwriting nonempty current values.
    for(const [key,value] of Object.entries(incoming)){if(arrayKeys.includes(key)||key==='apiConfig')continue;const existing=store.get(key,null);if(existing===null||existing===undefined||existing===''||existing===false){store.set(key,value);mergedCount++}else if(key==='settings'&&value&&typeof value==='object'){store.set(key,{...value,...existing})}else if(key==='chatProfile'&&value&&typeof value==='object'){store.set(key,{user:{...value.user,...existing?.user},assistant:{...value.assistant,...existing?.assistant}})}}
    if(incoming.apiConfig&&typeof incoming.apiConfig==='object'){const current=store.get('apiConfig',{});store.set('apiConfig',{...incoming.apiConfig,...current,savedKey:current.savedKey||''})}
@@ -1446,7 +1459,35 @@ function nearestGalaxyStar(x,y){let hit=null,best=Infinity;for(const p of galaxy
    // Reload data references and repaint all affected modules.
    diaries=store.get('diaries',[]);moods=store.get('moods',[]);keepsakes=store.get('keepsakes',[]);memories=store.get('memories',[]);chats=store.get('chats',[]);activeChatId=store.get('activeChatId',activeChatId);chatProfile=store.get('chatProfile',chatProfile);apiConfig=store.get('apiConfig',apiConfig);renderDiaries();renderMoods();renderKeepsakes();renderMemoryArchive();renderChat();refreshRelationship();refreshAnniversary();applyRoomSettings();await renderPhotos();updateStats();toast(`恢复完成：合并数据，未清空当前记录（${mergedCount} 项新增/合并）`)
  }
- $('#exportFullBackup')?.addEventListener('click',exportFullBackup);$('#importFullBackup')?.addEventListener('click',()=>$('#fullBackupInput')?.click());if($('#fullBackupInput'))$('#fullBackupInput').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const json=JSON.parse(await f.text());if(!confirm('将备份合并到当前小屋，不会删除现有数据。继续吗？'))return;await restoreFullBackup(json)}catch(err){toast('恢复失败：'+err.message)}finally{e.target.value=''}};
+ function exportChatMemoryOnly(){
+  const appData={};
+  for(const key of ['chats','activeChatId','memories','memoryLinks']){
+    const value=store.get(key,null);
+    if(value!==null&&value!==undefined)appData[key]=value;
+  }
+  const backup={format:'guyewensheng_full_backup',version:1,exportedAt:Date.now(),appData,photos:[]};
+  downloadJSONFile(backup,'guyewensheng_chat_memory_backup.json');
+  const status=$('#v32MigrationStatus');
+  if(status)status.textContent='当前聊天与记忆备份已导出；文件不包含 API 地址或 Key。';
+}
+$('#exportCurrentMigrationBtn')?.addEventListener('click',exportChatMemoryOnly);
+$('#importV32BackupBtn')?.addEventListener('click',()=>$('#v32BackupInput')?.click());
+$('#v32BackupInput')?.addEventListener('change',async e=>{
+  const file=e.target.files?.[0];if(!file)return;
+  const status=$('#v32MigrationStatus');
+  try{
+    const data=JSON.parse(await file.text());
+    if(data?.format!=='guyewensheng_full_backup'||!data?.appData||(!Array.isArray(data.appData.chats)&&!Array.isArray(data.appData.memories)))throw new Error('文件格式不正确，需选择 v32 聊天与记忆备份 JSON。');
+    const chatN=Array.isArray(data.appData.chats)?data.appData.chats.length:0;
+    const memoryN=Array.isArray(data.appData.memories)?data.appData.memories.length:0;
+    const messageN=(data.appData.chats||[]).reduce((n,c)=>n+(c.messages||[]).length,0);
+    if(!confirm('准备合并 v32 备份：'+chatN+' 个会话、'+messageN+' 条聊天消息、'+memoryN+' 条记忆。不会清空当前数据。继续吗？'))return;
+    await restoreFullBackup(data);
+    if(status)status.textContent='迁移完成：已读取 '+chatN+' 个会话、'+messageN+' 条消息、'+memoryN+' 条记忆。请检查通讯历史与记忆星海。';
+  }catch(err){if(status)status.textContent='迁移失败：'+(err.message||'未知错误');toast('迁移失败：'+(err.message||'未知错误'))}
+  finally{e.target.value=''}
+});
+$('#exportFullBackup')?.addEventListener('click',exportFullBackup);$('#importFullBackup')?.addEventListener('click',()=>$('#fullBackupInput')?.click());if($('#fullBackupInput'))$('#fullBackupInput').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const json=JSON.parse(await f.text());if(!confirm('将备份合并到当前小屋，不会删除现有数据。继续吗？'))return;await restoreFullBackup(json)}catch(err){toast('恢复失败：'+err.message)}finally{e.target.value=''}};
 
  $('#addMemory').onclick=()=>memoryModal();$('#saveChatMemory').onclick=()=>{const c=chatActive();if(!c.messages.length){toast('当前聊天还没有内容');return}const last=c.messages.slice(-8).map(m=>(m.role==='user'?'雅雯':'顾时夜')+'：'+m.content).join('\n\n');memoryModal(null,last)};
 
