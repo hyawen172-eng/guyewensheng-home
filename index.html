@@ -813,6 +813,16 @@ body.chat-immersive #view-chat .chat-composer{order:4!important}
  </div>
  <button class="splash-skip" id="splashSkip">跳过</button>
 </div>
+<script>
+// Independent splash failsafe: bypass the animation and never trap the user on startup.
+(function(){
+ const splash=document.getElementById('coupleSplash');
+ const skip=document.getElementById('splashSkip');
+ const close=()=>{if(splash){splash.style.setProperty('display','none','important');splash.remove();}};
+ if(skip)skip.addEventListener('click',close,{once:true});
+ setTimeout(close,6000);
+})();
+</script>
 
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z"/></symbol>
